@@ -1,0 +1,134 @@
+--Domaci zadatak 2.2
+
+--1.zadatak
+select
+    match_id, match_report
+FROM bootcamp.northern_star.matches_flat
+where match_report ilike '%goal%'
+--ovaj upit vraca sve sto ima niz karaktera 'goal' - 41
+--ako hocemo samo rec 'goal' :
+--where match_report ilike '% goal %' or match_report ilike 'goal %'
+-- or match_report ilike '% goal' or match_report ilike 'goal'
+
+--2.zadatak
+select 
+   match_id,
+   coalesce(referee_name, 'Unknown') as referee_name
+FROM bootcamp.northern_star.matches_flat
+limit 20
+
+--3.zadatak
+select
+    match_id,
+    match_report,
+    length(match_report) as len_match_report
+FROM bootcamp.northern_star.matches_flat
+where length(match_report) > 40
+--537
+
+--4.zadatak
+select
+    match_id,
+    kickoff_ts
+FROM bootcamp.northern_star.matches_flat
+where kickoff_ts >= '2025-01-01' and kickoff_ts < '2025-01-16'
+--31
+
+--5.zadatak
+select
+    match_id,
+    date(kickoff_ts) as matchdate,
+    dayofweek(kickoff_ts) as weekday
+FROM bootcamp.northern_star.matches_flat
+where dayofweek(kickoff_ts) = 6
+--0
+
+--6.zadatak
+select
+    match_id,
+    attendance
+FROM bootcamp.northern_star.matches_flat
+where season = '2024/25' and attendance between 20000 and 35000
+--188
+
+--7.zadatak
+select distinct first_goal_scorer
+FROM bootcamp.northern_star.matches_flat
+where first_goal_scorer like 'A%' or first_goal_scorer like '%-%'
+--22
+
+--8.zadatak
+select 
+    match_id,
+    time(kickoff_ts) as matchtime,
+    home_team,
+    away_team
+FROM bootcamp.northern_star.matches_flat
+where season = '2024/25' and hour(kickoff_ts) between 18 and 21
+--12
+
+--9.zadatak
+select
+    match_id,
+    kickoff_ts,
+    match_report
+FROM bootcamp.northern_star.matches_flat
+where month(kickoff_ts) in (3,4,5) and year(kickoff_ts) = 2025
+    and match_report ilike '%win%'
+--5
+
+--Dodatni zadaci
+--1.zadatak
+select match_id
+FROM bootcamp.northern_star.matches_flat
+where referee_name is null and attendance is null
+--0
+
+--2.zadatak
+select 
+    match_id,
+    kickoff_ts
+FROM bootcamp.northern_star.matches_flat
+where kickoff_ts >= '2025-03-01' and kickoff_ts < '2025-04-01'
+order by kickoff_ts
+--40
+
+--3.zadatak
+select 
+    match_id,
+    kickoff_ts
+FROM bootcamp.northern_star.matches_flat
+where kickoff_ts >= '2024-12-20' and kickoff_ts < '2025-01-11'
+--51
+
+--4.zadatak
+select
+    match_id,
+    date(kickoff_ts) as match_date,
+    home_team,
+    away_team,
+    coalesce(cast(attendance as string), 'Unknown') as attendance_status
+FROM bootcamp.northern_star.matches_flat
+
+--5.zadatak
+select
+    match_id,
+    date(kickoff_ts),
+    home_goals + away_goals as total_goals
+FROM bootcamp.northern_star.matches_flat
+where month(kickoff_ts) = 4 and year(kickoff_ts) = 2025
+    and (home_goals + away_goals) between 2 and 4
+order by date(kickoff_ts)    
+--22
+
+--6.zadatak
+select
+    match_id,
+    date(kickoff_ts) as matchdate,
+    home_team,
+    away_team,
+    concat(home_team_code, " ", home_goals_ht, ":", away_goals_ht, " ", away_team_code) as ht_result,
+    concat(home_team_code, " ", home_goals, ":", away_goals, " ", away_team_code) as final_result
+FROM bootcamp.northern_star.matches_flat
+where home_goals_ht = away_goals_ht and home_goals <> away_goals
+--244

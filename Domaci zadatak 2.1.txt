@@ -1,0 +1,87 @@
+--Domaci zadatak 2.1
+
+--1.zadatak
+select
+    match_id,
+    stadium_name,
+    attendance,
+    stadium_capacity,
+    stadium_capacity - attendance as empty_seats
+FROM bootcamp.northern_star.matches_flat
+order by empty_seats desc
+limit 5
+--Zajednicko za prve tri je sto su na istom stadionu igrane
+
+--2.zadatak
+select
+   distinct referee_name
+FROM bootcamp.northern_star.matches_flat
+where home_team = 'Riverton Athletic'
+--15
+
+--3.zadatak
+select 
+    match_id,
+    home_goals_ht - away_goals_ht as ht_score,
+    home_goals - away_goals as final_score
+FROM bootcamp.northern_star.matches_flat
+where away_goals_ht > home_goals_ht and away_goals < home_goals
+--15
+
+--4.zadatak
+select
+    match_id,
+    home_team,
+    away_team,
+    home_goals_ht,
+    away_goals_ht,
+    home_goals,
+    away_goals,
+    away_goals - away_goals_ht + home_goals - home_goals_ht as goals_2nd_ht
+FROM bootcamp.northern_star.matches_flat
+order by goals_2nd_ht desc
+limit 1
+
+--da bismo dobili golove u drugom poluvremenu : 
+--away_goals - away_goals_ht + home_goals - home_goals_ht
+
+--5.zadatak
+select  
+    match_id
+FROM bootcamp.northern_star.matches_flat
+where season = '2023/24' and (weather = 'snow' or weather = 'fog')
+--25
+
+--6.zadatak
+select
+    match_id,
+    kickoff_ts,
+    home_team,
+    away_team,
+    home_goals,
+    away_goals
+FROM bootcamp.northern_star.matches_flat
+where (home_team = 'Northport United' and away_team = 'Northport City') or
+    (away_team = 'Northport United' and home_team = 'Northport City')
+order by kickoff_ts  
+--4 utakmice, 2 puta pobedio NU, 1 pobedio NC, 1 nereseno  
+
+--7.zadatak
+select
+    match_id,
+    kickoff_ts
+FROM bootcamp.northern_star.matches_flat
+where season = '2024/25'
+order by kickoff_ts
+limit 8
+--imamo 6 utakmica koje bi mogle da dele 2. mesto po vremenu, zato je umesto top 3 stavljeno top 8, kako bih obezbedila da se sve one vide jer se ne moze jednoznacno odrediti koja je druga a koja treca
+--ako bismo eksplicitno hteli 3 utakmice, moglo bi ovako :
+--order  by kickoff_ts, match_id
+--limit 3
+
+
+--8.zadatak
+select match_id
+FROM bootcamp.northern_star.matches_flat
+where first_goal_scorer = "Sean O'Neill"
+--2
