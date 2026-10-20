@@ -1,0 +1,72 @@
+--1.zadatak
+select 
+    season,
+    count(*) as total_matches,
+    sum(home_goals + away_goals) as total_goals,
+    round(avg(home_goals + away_goals), 2) as avg_goals
+from matches_flat
+where home_goals is not null and away_goals is not null -- ukoliko ne zelimo da brojimo utakmice sa null golovima, jer count(*) broji sve, pa i njih
+group by season
+
+--2.zadatak
+select 
+    stadium_name,
+    min(attendance) as min_attendance,
+    max(attendance) as max_attendance,
+    round(avg(attendance), 2) as avg_attendance,
+    count(attendance) as no_known_attendance
+from matches_flat
+group by stadium_name
+
+--3.zadatak
+select
+    referee_name,
+    count(*) as no_matches,
+    sum(home_yellow_cards + away_yellow_cards) as total_yellow_cards
+from matches_flat
+group by referee_name
+having no_matches >= 10 and total_yellow_cards >= 20
+
+--4.zadatak
+select
+    case
+        when (home_goals + away_goals = 0) then 'Bez golova'
+        when (home_goals + away_goals = 1 or home_goals + away_goals = 2) then 'Malo golova'
+        when (home_goals + away_goals >= 3) then 'Mnogo golova'
+        else null
+    end as category,
+    count(*) as total_matches,
+    max(home_goals + away_goals) as max_goals_in_cat
+from matches_flat
+where home_goals is not null and away_goals is not null -- ovo nije nuzno, bez ovoga dobijamo jos jednu kategoriju - null
+group by category
+
+--5.zadatak
+select
+    home_team,
+    count(*) as no_matches,
+    sum(case when home_goals > away_goals then 1 else 0 end) as no_wins,
+    sum(case when home_goals < away_goals then 1 else 0 end) as no_losses
+from matches_flat
+group by home_team
+having no_matches >= 10
+
+--6.zadatak
+select
+    referee_name,
+    count(*) as total_matches,
+    sum(case when home_red_cards + away_red_cards > 0 then 1 else 0 end) as matches_red_cards,
+    round(sum(case when home_red_cards + away_red_cards > 0 then 1 else 0 end) * 100 / count(*), 2) as percentage
+from matches_flat
+group by referee_name
+
+--7.zadatak
+select
+    season,
+    sum(case when home_goals > away_goals then 1 else 0 end) as no_wins_home,
+    sum(case when home_goals < away_goals then 1 else 0 end) as no_wins_away,
+    sum(case when home_goals = away_goals then 1 else 0 end) as no_draw,
+    round(sum(case when home_goals = away_goals then 1 else 0 end) * 100 / count(*), 2) as percentage_draw
+from matches_flat
+where home_goals is not null and away_goals is not null -- jer count(*) broji sve utakmice, cak i one sa null golovima
+group by season
