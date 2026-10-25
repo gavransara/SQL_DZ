@@ -1,0 +1,82 @@
+--1.Koliko redova ima spoj matches i player_match_stats za sezonu 2024/25? Objasnite.
+select count(*)
+from matches m join player_match_stats pms on m.match_id = pms.match_id
+where m.season = '2024/25'
+--15200
+
+select count(*) from matches where season = '2024/25' --380
+select count(*) from player_match_stats where match_id = 2002 -- 40
+--zato sto player_match_stats ima i redove po igracu, pa se broj redova umnozava : za svaku utakmicu i svakog igraca na njoj; 380 utakmica x 40 igraca = 15200
+
+--2.Koliko puta je igrač u istoj sezoni igrao za dva različita kluba?
+with cte as (
+    select distinct season, player_id, team_id
+    from player_match_stats pms join matches m on m.match_id = pms.match_id
+    order by player_id
+)
+select count(*) as no_diff_teams_same_player
+from cte c1 join cte c2 on c1.season = c2.season and c1.player_id = c2.player_id
+and c1.team_id < c2.team_id --nije <> da se ne bi duplirali
+ --35
+--provera na jednom igracu :
+-- select m.match_id, pms.team_id, home_team_id, away_team_id, season
+-- from player_match_stats pms join matches m on m.match_id = pms.match_id
+-- where player_id = 5
+
+--3.Koliko utakmica ima više kartona od prosečne utakmice? Bez kartona računajte sa 0.
+with cards_per_game as(
+    select m.match_id, count(me.event_id) as no_cards
+    from matches m left join match_events me on m.match_id = me.match_id 
+    and event_type in ('yellow_card','second_yellow','red_card')
+    group by m.match_id
+)
+select count(*) as cards_more_than_avg
+from cards_per_game
+where no_cards > (
+                select 
+                    avg(no_cards) as avg_cards_per_game
+                from cards_per_game
+                )
+--370
+--yellow_card,second_yellow,red_card
+--select * from match_events where match_id = 1122
+--and event_type in ('yellow_card','second_yellow','red_card')
+
+--4.Koliko igrača je odigralo više od 10 utakmica u sezoni 2024/25?
+with cte as (
+    select pms.player_id, count(pms.match_id) as num_matches
+    from player_match_stats pms join matches m on m.match_id = pms.match_id
+    where m.season = '2024/25' and pms.minutes_played > 0 -- moze bez ovog uslova za minutes played ako se smatra da je igrao samo ako je bio u postavi za tu utakmicu
+    group by pms.player_id
+    having num_matches > 10
+)
+select count(player_id) as num_players
+from cte 
+--383 
+
+--provera :
+--player_id = 262 igrao 34 utakmice u sezoni
+-- select m.match_id
+-- from player_match_stats pms join matches m on m.match_id = pms.match_id
+-- where player_id = 262 and season = '2024/25' and minutes_played > 0 --34
+
+--5.Prikažite sve klubove koji su igrali u sezoni 2024/25, bilo kao domaćini ili kao gosti. Koristite UNION, a zatim izmenite upit tako da koristi UNION ALL. Objasnite razliku u broju redova koji dobijate.
+select distinct m.home_team_id as team_id
+from matches m
+where m.season = '2024/25'
+UNION
+select distinct m.away_team_id as team_id
+from matches m
+where m.season = '2024/25'
+--UNION daje 20 timova
+
+select distinct m.home_team_id as team_id
+from matches m
+where m.season = '2024/25'
+UNION ALL
+select distinct m.away_team_id as team_id
+from matches m
+where m.season = '2024/25'
+--UNION ALL daje 40
+--razlika potice od toga sto UNION cisti duplikate, dok ih UNION ALL prikazuje
+--u slucaju UNION ALL vidimo 2x svaki tim jer je bio nekad gost, nekad domacin, pa je duplo uracunat, u okviru home dela upita i u okviru away dela upita 

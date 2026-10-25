@@ -1,0 +1,168 @@
+--Vezba 1
+--Sesije 1 i 2
+--1.Прикажите утакмице са више од 40.000 гледалаца у марту 2025. Колико их је?
+select match_id
+from matches 
+where attendance > 40000 and kickoff_ts between '2025-03-01' and '2025-04-01'
+
+--2.Прикажите све различите комбинације резултата (home_goals, away_goals) за одигране
+--утакмице, сортиране по укупном броју голова. Колико различитих резултата постоји?
+select distinct home_goals, away_goals
+from matches
+where status = 'played'
+order by (home_goals + away_goals) desc
+
+--3.Који стадиони у имену имају реч „Park“?
+select stadium_id, stadium_name
+from stadiums
+where stadium_name ilike '%park%'
+
+--4. Прикажите утакмице без податка о посети или о времену: датум, тимове, посету и време, а уместо NULL нека пише 'непознато'. Колико их је?
+select
+    date(kickoff_ts) as datum,
+    home_team_id,
+    away_team_id,
+    coalesce(cast(attendance as string), 'Unknown') as attendance,
+    coalesce(weather, 'Unknown') as weather
+from matches
+where attendance is null or weather is null
+
+--Sesije 3 i 4
+--1. За сваког судију прикажите националност (из referees), број утакмица, просечан број голова и проценат победа домаћина. Код ког судије домаћини најчешће побеђују?
+select r.referee_name, r.nationality, count(m.match_id) as no_matches,
+    round(avg(home_goals + away_goals),2) as average_goals,
+    round(sum(case when home_goals > away_goals then 1 else 0 end) * 100 / count(*),2) as percentage_home_wins
+from referees r left join matches m on r.referee_id = m.referee_id
+where m.status = 'played'
+group by r.referee_name, r.nationality
+order by percentage_home_wins desc
+
+--2.Који клубови су у сезони 2024/25 имали више победа у гостима него код куће?
+WITH sides AS (
+  SELECT match_id, season, matchday, kickoff_ts,
+         home_team_id AS team_id, 
+         away_team_id AS opponent_id, 
+         'home' AS venue,
+         home_goals AS goals_for, away_goals AS goals_against
+  FROM bootcamp.northern_star.matches
+  WHERE status = 'played'
+  UNION ALL
+  SELECT match_id, season, matchday, kickoff_ts,
+         away_team_id,
+        home_team_id, 
+        'away',
+         away_goals, home_goals
+  FROM bootcamp.northern_star.matches
+  WHERE status = 'played'
+)
+
+select team_name,
+    sum(case when venue = 'home' and goals_for > goals_against then 1 else 0 end) as home_win, 
+    sum(case when venue = 'away' and goals_for > goals_against then 1 else 0 end) as away_win
+from sides s join teams t on t.team_id = s.team_id 
+where s.season = '2024/25'
+group by team_name
+having home_win < away_win
+order by away_win - home_win desc
+--3
+
+--3. Колико играча је давало голове у обе сезоне?
+select count(distinct me.player_id) as no_players_both_seasons
+from match_events me 
+where me.player_id in (select distinct me1.player_id
+                        from matches m join match_events me1 on me1.match_id = m.match_id
+                        where m.season = '2023/24'
+                        and me1.event_type in ('penalty_goal','goal'))
+and me.player_id in (select distinct me2.player_id
+                        from matches m join match_events me2 on me2.match_id = m.match_id
+                        where m.season = '2024/25'
+                        and me2.event_type in ('penalty_goal','goal'))
+--193
+--Sesija 5
+--1. Направите табелу лиге каква је била 1. јануара 2025. (сезона 2024/25) Ко је био на врху?
+--klub, odigrano, pobede, porazi, nereseno, bodovi
+with league as (    
+    select 
+    m.home_team_id as team_id,
+    count(m.match_id) as num_matches,
+    sum(case when home_goals > away_goals then 1 else 0 end) as wins,
+    sum(case when home_goals < away_goals then 1 else 0 end) as losses,
+    sum(case when home_goals = away_goals then 1 else 0 end) as draw,
+    sum(case when home_goals > away_goals then 3
+        when home_goals = away_goals then 1 
+        else 0 end) as points
+from matches m 
+where m.season = '2024/25' and date(m.kickoff_ts) < '2025-01-01' and m.status = 'played'
+group by m.home_team_id
+UNION ALL
+select 
+    m.away_team_id as team_id,
+    count(m.match_id) as num_matches,
+    sum(case when home_goals < away_goals then 1 else 0 end) as wins,
+    sum(case when home_goals > away_goals then 1 else 0 end) as losses,
+    sum(case when home_goals = away_goals then 1 else 0 end) as draw,
+    sum(case when home_goals < away_goals then 3
+        when home_goals = away_goals then 1 
+        else 0 end) as points
+from matches m 
+where m.season = '2024/25' and date(m.kickoff_ts) < '2025-01-01' and m.status = 'played'
+group by m.away_team_id
+)
+select 
+    t.team_name,
+    sum(num_matches) as num_matches,
+    sum(wins) as wins,
+    sum(losses) as losses,
+    sum(draw) as draw,
+    sum(points) as points
+from league l join teams t on t.team_id = l.team_id
+group by t.team_name
+order by points desc
+
+--Northport City, 42 poena
+
+--provera :
+-- select * from teams where team_name = 'Northport City' --team_id = 2
+-- select 
+--         sum(
+--     case when home_team_id = 2 and home_goals > away_goals then 3
+--         when home_team_id = 2 and home_goals = away_goals then 1
+--         when away_team_id = 2 and home_goals < away_goals then 3
+--         when away_team_id = 2 and home_goals = away_goals then 1 end) as points
+-- from matches
+-- where (home_team_id = 2 or away_team_id = 2) and season = '2024/25' and date(kickoff_ts) < '2025-01-01'
+--42
+
+--2. Колико играча је дало гол за два различита клуба?
+--goal, penalty_goal -- necu racunati autogolove jer je diskutabilno za koga su dati
+with teams_players as (
+        select distinct me.team_id, me.player_id
+        from match_events me
+        where me.event_type in ('goal', 'penalty_goal')
+)
+select count(distinct tp1.player_id) as num_players
+from teams_players tp1 join teams_players tp2 on tp1.player_id = tp2.player_id and
+tp1.team_id < tp2.team_id
+--12
+
+--player_id = 641
+--provera :
+-- select distinct team_id
+-- from match_events
+-- where event_type in ('goal', 'penalty_goal') and player_id = 641
+
+--3.У колико утакмица је тим који је губио на полувремену на крају победио? Колико од тих преокрета су направили гости?
+with switch as (
+    select count(*) as num_switch, 'home' as venue
+    from matches 
+    where home_goals_ht < away_goals_ht and home_goals > away_goals
+    UNION ALL
+    select count(*) as num_switch, 'away' as venue
+    from matches 
+    where home_goals_ht > away_goals_ht and home_goals < away_goals
+)
+select 
+    sum(num_switch) as total_switch,
+    (select num_switch from switch where venue = 'away') as away_switch
+from switch
+--30, 15

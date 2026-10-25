@@ -1,0 +1,18 @@
+--Zagrevanje
+--1. Nije dobar format teksta, zbog ' koji fudbaler sadrzi u imenu - moramo `` ili ""
+--2. Nije dobro jer u slucaju da se neka utakmica odigrala 26.decembra 2024, nece biti obuhvacena; between hvata samo do 2024-12-26 00:00:00 pa te utakmice ispadaju; treba postaviti 2024-12-27 kao gornju granicu
+--3.Ovo nije dobro jer u slucaju kada imamo 5 ili vise golova u CASE se ulazi u prvi uslov, on je ispunjen i dobija se poruka 'Ima golova'; ovo iz drugog uslova se nece ni proveravati; prvi uslov treba da se postavi npr home_goals + away_goals >=2 and home_goals + away_goals < 5
+--4.Uslov u where ce iseci ove timove sa 0 utakmica, on treba da se prebaci u uslov za vezivanje tj da se doda u join on t.team_id = m.home_team_id and m.season = '2024-25'
+--5.NOT IN ce se pogubiti sa null vrednostima, i zato nece vratiti nista
+--6.Ko zna koliko puta smo uracunali isti attendance jer smo ga uvezali sa player_match_stats, koji pri ovom uvezivanju ponavlja red za svaku utakmicu zbog igraca koji se nalaze u toj tabeli...
+
+SELECT COUNT(*) FROM players
+WHERE player_id NOT IN (SELECT related_player_id FROM match_events
+                        WHERE event_type IN ('goal', 'penalty_goal')
+                        );
+
+SELECT m.*, s.*
+--SUM(m.attendance)
+FROM matches m
+JOIN player_match_stats s ON m.match_id = s.match_id
+WHERE m.season = '2024/25';

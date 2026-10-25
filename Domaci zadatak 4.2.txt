@@ -1,0 +1,326 @@
+--Vezba 2
+-- Изаберите један клуб и анализирајте његову сезону 2024/25. Сваки упит почните истим кораком, тако да за други клуб мењате само име
+--Castlebrook United
+--1.Сезона у бројевима: утакмице, победе, нерешене, порази, дати и примљени голови, бодови
+WITH club AS (SELECT team_id FROM teams WHERE team_name = 'Castlebrook United')
+SELECT 
+    count(m.match_id) as num_matches,
+    sum(case when (c.team_id = m.home_team_id and home_goals > away_goals) or 
+    (c.team_id = m.away_team_id and home_goals < away_goals)
+    then 1 else 0 end) as wins,
+    sum(case when (c.team_id = m.home_team_id and home_goals < away_goals) or 
+    (c.team_id = m.away_team_id and home_goals > away_goals)
+    then 1 else 0 end) as losses,
+    sum(case when (c.team_id = m.home_team_id and home_goals = away_goals) or 
+    (c.team_id = m.away_team_id and home_goals = away_goals)
+    then 1 else 0 end) as draw,
+    sum(case when c.team_id = m.home_team_id then home_goals else away_goals end) as scored_goals,
+    sum(case when c.team_id = m.home_team_id then away_goals else home_goals end) as 
+    received_goals,
+    sum(case when (c.team_id = m.home_team_id and home_goals > away_goals) or 
+    (c.team_id = m.away_team_id and home_goals < away_goals) then 3
+             when (c.team_id = m.home_team_id and home_goals = away_goals) or 
+    (c.team_id = m.away_team_id and home_goals = away_goals) then 1
+            else 0 end) as points
+from club c left join matches m on c.team_id = m.home_team_id or c.team_id = m.away_team_id 
+where season = '2024/25' and status = 'played'
+
+----------------------------------------------------------------------------------
+--Statistika tima Castlebrook United u sezoni 2024/25 :
+--no.matches : 38, wins : 18, losses : 5, draw : 15, scored goals : 82, received goals : 43, points : 69
+-----------------------------------------------------------------------------------
+
+--provera
+
+--utakmice :
+-- select count(distinct match_id)
+-- from matches 
+-- where (home_team_id = 7 or away_team_id = 7) and status = 'played' and season = '2024/25'
+--38
+
+--pobede, porazi i izjednacenja :
+--  select 
+--      sum(case when home_goals > away_goals then 1 else 0 end) as wins,
+--      sum(case when home_goals < away_goals then 1 else 0 end) as losses,
+--      sum(case when home_goals = away_goals then 1 else 0 end) as draw
+--  from matches 
+--  where home_team_id = 7 and season = '2024/25' 
+--  union 
+--  select 
+--      sum(case when home_goals < away_goals then 1 else 0 end) as wins,
+--      sum(case when home_goals > away_goals then 1 else 0 end) as losses,
+--      sum(case when home_goals = away_goals then 1 else 0 end) as draw
+--  from matches 
+--  where away_team_id = 7 and season = '2024/25' 
+-- 18, 5, 15
+
+--primljeni golovi :
+--  select sum(away_goals)
+--  from matches
+--  where home_team_id = 7 and season = '2024/25' 
+--  union
+--  select sum(home_goals)
+--  from matches
+--  where away_team_id = 7 and season = '2024/25' 
+ --43
+
+--postignuti golovi :
+--  select sum(home_goals)
+--  from matches
+--  where home_team_id = 7 and season = '2024/25' 
+--  union
+--  select sum(away_goals)
+--  from matches
+--  where away_team_id = 7 and season = '2024/25' 
+ --82
+
+ --poeni :
+--  select 
+--     sum(case when home_goals > away_goals then 3
+--         when home_goals = away_goals then 1
+--         else 0 end) as poeni
+--  from matches
+--  where home_team_id = 7 and season = '2024/25'
+--  union
+--  select 
+--     sum(case when home_goals < away_goals then 3
+--         when home_goals = away_goals then 1
+--         else 0 end) as poeni
+--  from matches
+--  where away_team_id = 7 and season = '2024/25'
+ --69
+
+ --2. Код куће и у гостима: исти бројеви, одвојено за домаће и гостујуће утакмице
+ --утакмице, победе, нерешене, порази, дати и примљени голови, бодови
+WITH club AS (SELECT team_id FROM teams WHERE team_name = 'Castlebrook United')
+SELECT 
+    count(m.match_id) as num_matches,
+    sum(case when home_goals > away_goals
+    then 1 else 0 end) as wins,
+    sum(case when home_goals < away_goals
+    then 1 else 0 end) as losses,
+    sum(case when home_goals = away_goals
+    then 1 else 0 end) as draw,
+    sum(home_goals) as scored_goals,
+    sum(away_goals) as received_goals,
+    sum(case when home_goals > away_goals then 3
+             when home_goals = away_goals then 1
+            else 0 end) as points
+from club c left join matches m on c.team_id = m.home_team_id 
+where season = '2024/25' and status = 'played'
+--------------------------------------------------------------------------------------
+--Statistika tima Castlebrook United u sezoni 2024/25 kao domacina :
+--no.matches : 19, wins : 8, losses : 3, draw : 8, scored goals : 42, received goals : 23, points : 32
+--------------------------------------------------------------------------------------
+
+WITH club AS (SELECT team_id FROM teams WHERE team_name = 'Castlebrook United')
+SELECT 
+    count(m.match_id) as num_matches,
+    sum(case when home_goals < away_goals
+    then 1 else 0 end) as wins,
+    sum(case when home_goals > away_goals
+    then 1 else 0 end) as losses,
+    sum(case when home_goals = away_goals
+    then 1 else 0 end) as draw,
+    sum(away_goals) as scored_goals,
+    sum(home_goals) as received_goals,
+    sum(case when home_goals < away_goals then 3
+             when home_goals = away_goals then 1
+            else 0 end) as points
+from club c left join matches m on c.team_id = m.away_team_id 
+where season = '2024/25' and status = 'played'
+
+--------------------------------------------------------------------------------------
+--Statistika tima Castlebrook United u sezoni 2024/25 kao gosta :
+--no.matches : 19, wins : 10, losses : 2, draw : 7, scored goals : 40, received goals : 20, points : 37
+--------------------------------------------------------------------------------------
+
+
+--3.Стрелци: три најбоља стрелца клуба и најбољи асистент.
+WITH club AS (SELECT team_id FROM teams WHERE team_name = 'Castlebrook United')
+select 
+    me.player_id,
+    p.first_name,
+    p.last_name,
+    sum(case when me.event_type = 'penalty_goal' then 1 else 0 end) as num_penalty,
+    sum(case when me.event_type = 'goal' then 1 else 0 end) as num_clear_goal,
+    count(me.event_id) as no_goals
+from club c join match_events me on c.team_id = me.team_id
+    join matches m on (c.team_id = m.home_team_id or c.team_id = m.away_team_id) and me.match_id = m.match_id join players p on p.player_id = me.player_id
+where m.season = '2024/25' and me.event_type in ('goal', 'penalty_goal') 
+group by me.player_id, p.first_name, p.last_name
+order by no_goals desc
+
+-----------------------------------------------------------------------------------
+--Tri najbolja strelca Castlebrook United u sezoni 2024/25 su :
+--1.José Muñoz, ostvario 24 gola, 3 iz penala
+--2.Mads Nielsen, sa ostvarenih 8 golova
+--3.Emil Kristensen, ostvareno 7 golova
+-----------------------------------------------------------------------------------
+
+--provera :
+-- select count(me.event_id)
+-- from match_events me join matches m on m.match_id = me.match_id
+-- where m.season = '2024/25' and me.event_type in ('goal', 'penalty_goal')
+-- and me.player_id = 680
+
+WITH club AS (SELECT team_id FROM teams WHERE team_name = 'Castlebrook United')
+select me.related_player_id,
+        p.first_name,
+        p.last_name,
+        count(me.event_id) as no_assistance
+from club c join matches m on (c.team_id = m.home_team_id or c.team_id = m.away_team_id)
+join match_events me on m.match_id = me.match_id and c.team_id = me.team_id
+join players p on me.related_player_id = p.player_id
+where m.season = '2024/25' and me.related_player_id is not null
+and me.event_type = 'goal'
+group by me.related_player_id, p.first_name, p.last_name
+order by no_assistance desc
+
+-----------------------------------------------------------------------------------
+--Najbolji asistenti Castlebrook United u sezoni 2024/25 su Rafael Oliveira i Mads Nielsen, sa po 5 asistencija svaki.
+-----------------------------------------------------------------------------------
+
+--provera :
+-- select related_player_id, count(event_id)
+-- from match_events me join matches m on m.match_id = me.match_id
+-- where event_type = 'goal' and related_player_id is not null and team_id = 7
+-- and season = '2024/25'
+-- group by related_player_id
+-- order by count(event_id) desc
+
+--4.Дисциплина: картони клуба по утакмици у поређењу са просеком лиге по тиму по утакмици
+--prosecan broj kartona tima, prosecan broj kartona svih timova
+WITH club AS (SELECT team_id FROM teams WHERE team_name = 'Castlebrook United'),
+cards_per_game as(
+    select 
+        m.match_id, 
+        m.home_team_id as team_id,
+        count(me.event_id) as no_cards
+    from matches m left join match_events me on m.match_id = me.match_id 
+    and event_type in ('yellow_card','second_yellow','red_card') and me.team_id = m.home_team_id
+    where season = '2024/25' and m.status = 'played'
+    group by m.match_id, m.home_team_id
+    UNION ALL
+    select 
+        m.match_id, 
+        m.away_team_id as team_id,
+        count(me.event_id) as no_cards
+    from matches m left join match_events me on m.match_id = me.match_id 
+    and event_type in ('yellow_card','second_yellow','red_card') and me.team_id = m.away_team_id
+    where season = '2024/25' and m.status = 'played'
+    group by m.match_id, m.away_team_id
+)
+select 
+    round(avg(case when team_id in (select team_id from club) then no_cards end), 2) as club_cards_per_match,
+    round(avg(no_cards), 2) as league_cards_per_match
+from cards_per_game
+
+------------------------------------------------------------------------------------
+--U sezoni 2024/25 tim Castlebrook United je imao 2.03 kartona po utakmici, dok je prosek lige 1.74 kartona po utakmici 
+------------------------------------------------------------------------------------
+
+--provera
+-- select count(me.event_id) as no_cards, count(distinct m.match_id) as no_matches
+-- from matches m left join match_events me on m.match_id = me.match_id 
+-- and (m.home_team_id = me.team_id or m.away_team_id = me.team_id)
+-- and event_type in ('yellow_card','second_yellow','red_card')
+-- and me.team_id = 7
+-- where m.season = '2024/25'
+--77/380 = 2.03
+
+--5.Тренери: ко је водио клуб у сезони и са колико бодова по утакмици.
+
+---------------NAPOMENA----------------
+--Ja sam uzela da analiziram tim koji u tabeli manager_spells ima problem tj poklapanja menadzera u istom vremenskom periodu
+--Kako bismo predupredili dupliranja zbog DQ greske, napravila sam view koji cu koristiti u ovom delu zadatka, kao sto smo pokazali na casu.
+
+create or replace view manager_spells_clean as (
+    select * from manager_spells
+    where spell_id not in (27,28,29)
+)
+
+WITH club AS (SELECT team_id FROM teams WHERE team_name = 'Castlebrook United')
+select 
+    distinct ms.manager_name,
+    count(m.match_id) as no_matches,
+    round(sum(case when (c.team_id = m.home_team_id and m.home_goals > m.away_goals) or 
+    (c.team_id = m.away_team_id and m.home_goals < m.away_goals) then 3
+        when (c.team_id = m.home_team_id and m.home_goals = m.away_goals) or 
+    (c.team_id = m.away_team_id and m.home_goals = m.away_goals) then 1
+        else 0 end) / count(m.match_id), 2) as points_per_match
+from club c join matches m on c.team_id = m.home_team_id or c.team_id = m.away_team_id join manager_spells_clean ms on ms.team_id = c.team_id
+and date(kickoff_ts) between ms.start_date and coalesce(ms.end_date, '9999-12-31')
+where m.season = '2024/25'
+group by ms.manager_name
+
+----------------------------------------------------------------------------------
+--U sezoni 2024/25 tim Castlebrook United je vodio Unai Emery, a prosecan broj utakmica je 1.82
+----------------------------------------------------------------------------------
+
+--provera :
+-- select sum(case when (m.home_team_id = 7 and m.home_goals > m.away_goals) or 
+--     (m.away_team_id = 7 and m.home_goals < m.away_goals) then 3
+--         when (m.home_team_id = 7 and m.home_goals = m.away_goals) or 
+--     (m.away_team_id = 7 and m.home_goals = m.away_goals) then 1
+--         else 0 end) as poeni,
+--         count(m.match_id)
+-- from matches m
+-- where m.season = '2024/25'
+-- and (m.home_team_id = 7 or m.away_team_id = 7)
+--69/38
+
+--6.Највећа победа и најтежи пораз
+WITH club AS (SELECT team_id FROM teams WHERE team_name = 'Castlebrook United'),
+stats as(
+        select 
+        c.team_id as our_team_id,
+        case when c.team_id = m.home_team_id then away_team_id
+            else home_team_id
+            end as opponent_id,
+        case when c.team_id = m.home_team_id then m.home_goals
+            else m.away_goals
+            end as our_team_goals,
+        case when c.team_id = m.home_team_id then m.away_goals
+            else m.home_goals
+            end as opponent_goals,
+         s.stadium_name   
+    from club c join matches m on c.team_id = m.home_team_id or c.team_id = m.away_team_id join stadiums s on s.stadium_id = m.stadium_id
+    where season = '2024/25' and status = 'played'
+)
+select 
+    t1.team_name as our_team,
+    t2.team_name as opponent,
+    s.our_team_goals,
+    s.opponent_goals,
+    s.our_team_goals - s.opponent_goals as difference,
+    s.stadium_name
+from stats s join teams t1 on s.our_team_id = t1.team_id join teams t2 on s.opponent_id = t2.team_id
+order by difference desc
+
+----------------------------------------------------------------------------------
+--U sezoni 2024/25 tim Castlebrook United :
+--Najveca pobeda : protiv Redcliffe Athletic-a, 6:0 na Castle Grounds-u, domacem terenu 
+--Najtezi poraz : protiv Harrowgate Albion-a, 0:3 na The Albion Ground-u, domacem terenu protivnika
+----------------------------------------------------------------------------------
+
+
+--select team_name, stadium_name 
+--from teams t join stadiums s on t.stadium_id = s.stadium_id
+--order by team_name
+
+--7.Публика: просечна посета и попуњеност на домаћим утакмицама, и колико утакмица нема податак о посети.
+WITH club AS (SELECT team_id FROM teams WHERE team_name = 'Castlebrook United')
+select  
+        round(avg(m.attendance), 0) as avg_attendance,
+        round(avg(m.attendance * 100 / s.capacity), 2) as occupancy,
+        sum(case when attendance is null then 1 else 0 end) as unknown_attendance
+from club c join matches m on c.team_id = m.home_team_id join stadiums s on m.stadium_id = s.stadium_id
+where season = '2024/25' and status = 'played'
+
+-------------------------------------------------------------------------------------
+--U sezoni 2024/25 za tim Castlebrook United, kada je rec o domacim utakmicama, prosecna posecenost je bila 29.617 gledalaca, a popunjenost je bila 89.75%. Za jednu utakmicu nije zabelezen broj poseta.
+-------------------------------------------------------------------------------------
+
+--provera
+--select match_id, status from matches where home_team_id = 7 and attendance is null --and season = '2024/25'
