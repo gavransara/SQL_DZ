@@ -1,0 +1,52 @@
+--1. Prosek datih golova u poslednjih 5 utakmica, uz izričit okvir prozora. Koja je najveća vrednost? Računajte samo kada prozor zaista ima 5 utakmica.
+--nije naglaseno u zadatku, pretpostavljam da se gledaju dati golovi na bazi tima
+with max_vr as(  
+    select
+        match_id,
+        kickoff_ts,
+        team_id,
+        goals_for,
+        row_number() over(partition by team_id order by kickoff_ts, match_id, team_id) as rn,
+        (avg(goals_for) over(partition by team_id order by kickoff_ts, match_id, team_id
+        rows between 4 preceding and current row)) as avg_5
+    from team_matches
+    qualify rn >= 5
+    order by kickoff_ts, match_id, team_id
+)
+select max(avg_5) as max
+from max_vr
+
+--2.Tekući zbir datih golova svakog kluba u sezoni 2024/25: ko je prvi stigao do 50 golova i kada?
+--kada je br.golova > 50 gledati po svakom timu najmanji kickoff_ts
+with cte as(
+    select
+        match_id,
+        kickoff_ts,
+        team_id,
+        goals_for,
+        sum(goals_for) over(partition by team_id order by kickoff_ts, match_id
+                        rows between unbounded preceding and current row) as goals_so_far 
+    from team_matches
+    where season = '2024/25'
+)
+select c.team_id, team_name, min(kickoff_ts) as first_date
+from cte c join teams t on c.team_id = t.team_id
+where goals_so_far >= 50
+group by c.team_id, team_name
+order by first_date
+limit 1
+
+--3. Za svaku domaću utakmicu izračunajte promenu posećenosti u odnosu na prethodnu domaću utakmicu istog kluba u istoj sezoni. Gde je najveći pad i zašto?
+with cte as(
+    select match_id, home_team_id, kickoff_ts, season, attendance,
+        attendance - lag(attendance) over(partition by home_team_id, season order by kickoff_ts, match_id) as diff_last_match_att
+    from matches
+    order by home_team_id, kickoff_ts, season
+)
+select match_id, home_team_id, season, kickoff_ts, diff_last_match_att, attendance
+from cte
+where diff_last_match_att is not null
+order by diff_last_match_att asc
+limit 1
+
+--ovo je utakmica bez publike i zato je najveci pad -> attendance = 0

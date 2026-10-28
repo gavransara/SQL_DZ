@@ -1,0 +1,47 @@
+-- 1. Za sezonu 2024/25 prikažite igrače i ukupan broj golova koje su postigli. Prikažite samo igrače koji su postigli bar jedan gol.
+
+-- Pomoću DENSE_RANK() rangirajte igrače prema ukupnom broju golova, od najvećeg ka najmanjem. Igrači sa istim brojem golova treba da imaju isti rang.
+
+select 
+    me.player_id, 
+    concat(p.first_name, ' ', p.last_name) as name,
+    count(me.event_id) as total_goals,
+    dense_rank() over(order by count(me.event_id) desc) as rn
+from matches m join match_events me on m.match_id = me.match_id join players p on p.player_id = me.player_id
+where season = '2024/25' and event_type in ('goal', 'penalty_goal')
+group by me.player_id, name
+having total_goals >= 1
+
+--2. Za sezonu 2024/25 prikažite tri igrača sa najviše postignutih golova za svaki klub.
+--Prikažite naziv kluba, ime i prezime igrača i broj postignutih golova. 
+--Pomoću ROW_NUMBER() odredite redosled igrača unutar svakog kluba, od najvećeg ka najmanjem broju golova.
+with rank as(
+    select 
+        me.player_id, 
+        me.team_id, 
+        count(me.event_id) as golovi,
+        row_number() over(partition by me.team_id order by count(me.event_id) desc) as rn
+    from matches m join match_events me on m.match_id = me.match_id 
+    where season = '2024/25' and event_type in ('goal', 'penalty_goal')
+    group by me.player_id, me.team_id
+    qualify rn <= 3
+)
+select 
+    t.team_name,
+    concat(p.first_name, ' ', p.last_name) as player_name,
+    r.golovi
+from rank r join players p on p.player_id = r.player_id join teams t on t.team_id = r.team_id
+
+--3.Za sezonu 2024/25 prikažite sve utakmice svakog kluba, broj golova koje je klub postigao i broj golova koje je postigao u svojoj prethodnoj utakmici.
+--Pomoću LAG() pronađite broj golova iz prethodne utakmice. Izračunajte i razliku između broja golova na tekućoj i prethodnoj utakmici. Rezultate sortirajte po nazivu kluba i datumu utakmice.
+select 
+    tm.team_id, 
+    t.team_name,
+    tm.match_id, 
+    tm.kickoff_ts,
+    goals_for as golovi,
+    lag(goals_for) over(partition  by tm.team_id order by tm.kickoff_ts) as prethodna_golovi,
+    golovi - prethodna_golovi as diff
+from team_matches tm join teams t on t.team_id = tm.team_id
+where season = '2024/25'
+order by t.team_name, kickoff_ts
